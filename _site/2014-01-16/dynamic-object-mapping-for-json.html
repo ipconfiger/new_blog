@@ -1,0 +1,310 @@
+<!doctype html>  
+<!--[if lt IE 7 ]> <html lang="en" class="no-js ie6"> <![endif]--> 
+<!--[if IE 7 ]>    <html lang="en" class="no-js ie7"> <![endif]--> 
+<!--[if IE 8 ]>    <html lang="en" class="no-js ie8"> <![endif]--> 
+<!--[if IE 9 ]>    <html lang="en" class="no-js ie9"> <![endif]--> 
+<!--[if (gt IE 9)|!(IE)]><!--> <html lang="en" class="no-js"> <!--<![endif]--> 
+<head> 
+  <meta charset="utf-8"> 
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+ 
+  <title>动态映射json数据到objective-c的对象</title> 
+  <meta name="author" content="压力很大同志的Blog" />
+  <link href='http://fonts.googleapis.com/css?family=Lato:light,regular,bold' rel='stylesheet' type='text/css'>
+  <link href="/css/reset.css" media="screen" rel="stylesheet" type="text/css" />
+  <link href="/css/main.css" media="screen" rel="stylesheet" type="text/css" /> 
+  <link rel="alternate" type="application/rss+xml" href="/atom.xml" title="RSS feed">
+  <link rel="stylesheet" href="http://yandex.st/highlightjs/8.0/styles/default.min.css">
+  <script src="highlight.min.js"></script>
+</head> 
+ 
+    <body> 
+        <div id="header">
+            <div class="inner">
+                <ul>
+                    <li><a href="http://www.cnblogs.com/Alexander-Lee/">旧BLOG</a></li>
+                    <li><a href="http://weibo.com/alexislm" target="_blank">关注本猿</a></li>
+                    <li><a href="/about/">关于本猿</a></li>
+                </ul>
+                <h1><a href="/">囧~压力好大</a></h1>
+                <h2>程序猿-超级懒</h2>
+            </div>
+        </div>
+                
+        <div id="content" class="clearfix">
+            <div class="main">
+                <div class="post">
+    <h3><a href="/2014-01-16/dynamic-object-mapping-for-json.html">动态映射json数据到objective-c的对象</a></h3>
+  
+    <div class="body">
+        <p>最近在实现IOS的app连接Restful Api的部分功能，发现从Api获取到json反序列化成字典后如果要映射到程序里的实体，需要写很多重复的代码，到处都是字符串，往往json结构比较复杂的时候会极其的蛋痛，所以实现了一个将字典对象映射到objective-c类实例属性的东东，顺便学习一下objective-c的一部分动态特性。</p>
+<p>首先搭个架子先，因为要映射的目标很多，所以我们定义个基类，然后需要映射的类继承这个基类就ok了：</p>
+<pre><code>@interface BaseModle : NSObject
+- (id)init:(NSDictionary *)data;
+@end
+</code></pre>
+<p>只需要暴露一个构造器就足够了，放入一个字典，然后一切基类自己搞定。</p>
+<pre><code>#import "BaseModle.h"
+
+@implementation BaseModle
+-(id)init:(NSDictionary *)data{
+    self = [super init];
+    if (self){
+        [self setAttributes:data];
+    }
+    return (self);
+}
+
+- (void)setAttributes:(NSDictionary *)data{
+    //我们将在这里完成映射的功能，当然只是功能的起始点
+}
+@end
+</code></pre>
+<p>然后想一想，我们在子类里会定义很多属性，那么我们需要能够获取到这些属性的名称和类型。知道这些后再到字典里去取对应的键值赋值到属性上就ok啦。</p>
+<p>要通过反射获取类里定义的属性列表，需要先引入 objc/message.h，这里定义了我们需要的class_copyPropertyList函数和objc_property_t类型。</p>
+<pre><code>unsigned int outCount = 0;
+objc_property_t *properties = class_copyPropertyList(self.class, &amp;outCount);
+for (int i = 0; i &lt; outCount; i++) {
+    objc_property_t property = properties[i];
+    NSString *propName = [NSString stringWithUTF8String:property_getName(property)];
+}
+</code></pre>
+<p>这个时候变量propName就是属性的名称了，这个时候只需要根据属性的名称从data里取对应的键值就ok了。得到值后需要给属性赋值，所以我们需要通过属性名称去构造一个给属性赋值的selector。</p>
+<pre><code>- (SEL)getSetterAttributeName:(NSString *)attributeName
+{
+    NSString *capital = [[attributeName substringToIndex:1] uppercaseString];
+    NSString *setterSelStr = [NSString stringWithFormat:@"set%@%@:",capital,[attributeName substringFromIndex:1]];
+    return NSSelectorFromString(setterSelStr);
+}
+</code></pre>
+<p>这个时候只需要 [self performSelectorOnMainThread:sel withObject:value waitUntilDone:YES]; 就可以给属性赋值了。</p>
+<p>这个时候我们可以组织起第一个版本了，不过使用接口的一个喜欢呵呵的家伙说，如果json里有嵌套的字典怎么办呢？所以再进一步实现递归嵌套的功能。这个时候需要知道属性的类型，然后根据类型来动态创建一个新实例，然后把嵌套的字典丢进去继续映射。</p>
+<p>先看看怎么获取属性的类型：</p>
+<pre><code>- (NSDictionary *)attributeMapDictionary{
+    NSMutableDictionary *propertyDict = [[NSMutableDictionary alloc] init];
+    unsigned int outCount = 0;
+    objc_property_t *properties = class_copyPropertyList(self.class, &amp;outCount);
+    for (int i = 0; i &lt; outCount; i++) {
+        objc_property_t property = properties[i];
+        NSString *propName = [NSString stringWithUTF8String:property_getName(property)];
+        const char *typeName =property_getAttributes(property);
+        NSString *properyTypeName = [[NSString alloc] initWithCString:typeName encoding:NSUTF8StringEncoding];
+        [propertyDict setObject:properyTypeName forKey:propName];
+    }
+    return propertyDict;
+}
+</code></pre>
+<p>我们在刚才获取属性名的基础上扩展一下，现在我们获取到了属性的名称和类型名，然后生成一个用属性名为Key，属性类型名称作为Value的字典返回。</p>
+<p>不过这个时候返回的类型名称是类似：T@"NSString",C,N,V_test 这样子蛋痛的形式，所以还需要一个解析函数来辅助</p>
+<pre><code>- (NSString*) className:(NSString *)propertyTypeName {
+    NSLog(@"%@", propertyTypeName);
+    NSString* name = [[propertyTypeName componentsSeparatedByString:@","] objectAtIndex:0];
+    NSString* cName = [[name substringToIndex:[name length]-1] substringFromIndex:3];
+    return cName;
+}
+</code></pre>
+<p>这个时侯我们可以得到一个干净的类名了，之后就可以通过NSClassFromString来获得类对象，然后实例化这个类型出来。整理一下第二个版本类似：</p>
+<pre><code>- (void)setAttributes:(NSDictionary *)data{
+    NSDictionary *propertys = [self attributeMapDictionary];
+    for (NSString *attributeName in [propertys allKeys]){
+        SEL sel = [self getSetterAttributeName:attributeName];
+        if ([self respondsToSelector:sel]) {
+            id value = [data objectForKey:attributeName];
+            if (value) {
+                NSString* className = [self className:[propertys objectForKey:attributeName]];
+                if ([value isKindOfClass:[NSDictionary class]]) {
+                    id subObject = [[NSClassFromString(className) alloc] init:value];
+                    [self performSelectorOnMainThread:sel withObject: subObject waitUntilDone:YES];
+                    continue;
+                }                
+                [self performSelectorOnMainThread:sel withObject:value waitUntilDone:YES];
+            }
+        }
+    }
+}
+</code></pre>
+<p>这个时候嵌套的类只需要定义属性为：</p>
+<pre><code>@property (nonatomic, strong) MyClass *subObject;
+</code></pre>
+<p>但是再继续想一下，如果嵌套的是数组呢，数组里再有嵌套的字典呢，这个时候的麻烦是需要知道数组里的对象是什么类型，也就是在定义属性的时候要传入一个类型的名称进去。How？最后试了试，在定义protocal的时候获取到的名称会包含protocal的名称，比如定义一个空协议和要嵌套进去的类同名： </p>
+<pre><code>@protocol MyClass
+@end
+
+@interface MyClass : BaseModle
+@property (nonatomic, copy) NSString* test;
+@property (nonatomic, strong) NSArray&lt;MyClass&gt;* subList;
+@end
+</code></pre>
+<p>这个时候获取到的类型名称是：T@"NSArray<MyClass>",C,N,V_mySelf</p>
+<p>这个时候修改一下获取类型名称的辅助方法就可以获取到嵌套的类型了。</p>
+<p>完整的实现代码：</p>
+<script src="https://gist.github.com/ipconfiger/8458066.js"></script>
+
+<p>使用的话：</p>
+<pre><code>#import "BaseModle.h"
+@protocol mmMyObject
+@end
+
+@interface mmMyObject : BaseModle
+@property (nonatomic, copy) NSString* test;
+@property (nonatomic, copy) NSArray&lt;mmMyObject&gt;* mySelf;
+@end
+</code></pre>
+<p>先定义一个子类，然后：</p>
+<pre><code>mmMyObject *myobj = [[mmMyObject alloc] init:@{@"test": @"hahahaha", @"mySelf": @[@{@"test": @"huohuohuohuo"}]}];
+mmMyObject *obj = [myobj.mySelf objectAtIndex:0];
+NSLog(@"%@", obj.test);
+</code></pre>
+<p>得到结果：huohuohuohuo</p>
+<h2>大功告成！！碎叫去也</h2>
+    </div>
+    
+    <div class="meta">
+        Posted on <a href="/2014-01-16/dynamic-object-mapping-for-json.html">2014-01-16 00:00:00</a>
+    </div>
+    <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'ipconfiger'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+     
+</div>
+            </div>
+            <div class="side">
+                <a href="/about/"><img src="/images/me.png" alt="ME" style="width:125px;height:125px" /></a>
+                <div>
+                        80后，程序猿 ，咕咚网扫地大爷 <a href="/about/">更多</a>
+                </div>
+            </div>
+        </div>
+        
+        <div id="footer" class="clearfix">
+            <div class="inner">
+                <div class="archives">
+                    <h2>文章列表</h2>
+            
+                    <table>
+                    
+                        <tr>
+                            <td class="date">2015年7d月19日</td>
+                            <td><a href="/2015-07-19/bananatoast.html">程序员快手营养早餐-香蕉吐司卷</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2015年7d月14日</td>
+                            <td><a href="/2015-07-14/programmer-and-coffee.html">简单做一杯好咖啡之Minipresso</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2015年7d月9日</td>
+                            <td><a href="/2015-07-09/airpressor.html">程序员与咖啡：远离速溶用爱乐压做杯好咖啡</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2015年5d月13日</td>
+                            <td><a href="/2015-05-13/GPS.html">为什么GPS记录的数据不准确</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2015年4d月7日</td>
+                            <td><a href="/2015-04-07/bsbdqj-supervisor-subprocess.html">百撕不得骑姐系列之丢失的signal</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2015年4d月2日</td>
+                            <td><a href="/2015-04-02/simple-rough-print-with-pi.html">不要驱动，简单粗暴的用树莓派驱动USB打印机</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2014年6d月25日</td>
+                            <td><a href="/2014-06-25/coredata-guide-for-pythoner.html">给Python程序员的CoreData简单指南</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2014年6d月25日</td>
+                            <td><a href="/2014-06-25/noblocking-coredata-in-multithread.html">通则不痛，远离阻塞-在多线程环境中使用CoreData，以及一个简单的封装</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2014年5d月11日</td>
+                            <td><a href="/2014-05-11/使NodeJs的require能够加载变更后的模块.html">使NodeJs的require能够加载变更后的模块</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2014年5d月6日</td>
+                            <td><a href="/2014-05-06/最近啥都没写，赶脚好有负罪感.html">最近啥都没写，赶脚好有负罪感</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2014年4d月4日</td>
+                            <td><a href="/2014-04-04/redis-message-with-tornado.html">用Redis作为后端来实现高性能的Longpolling消息系统</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2014年1d月16日</td>
+                            <td><a href="/2014-01-16/dynamic-object-mapping-for-json.html">动态映射json数据到objective-c的对象</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2014年1d月12日</td>
+                            <td><a href="/2014-01-12/python-multitask-fixed.html">关于Python并行任务技巧的几点补完</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2013年11d月5日</td>
+                            <td><a href="/2013-11-05/speedup-gunicorn-and-restart-gracefully.html">用meinheld加速gunicorn与优雅的重启gunicorn的worker</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2013年10d月21日</td>
+                            <td><a href="/2013-10-21/appletv3play.html">Apple TV3不完全试玩手册</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2013年8d月8日</td>
+                            <td><a href="/2013-08-08/torcast.html">基于Redis实现多个tornado进程间消息通信</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2011年12d月11日</td>
+                            <td><a href="/2011-12-11/mysql-schemaless.html">MySQL数据库支持Schemaless的数据库存储方案</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2011年11d月12日</td>
+                            <td><a href="/2011-11-12/django-long-conn.html">让Django支持数据库长连接</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2011年9d月27日</td>
+                            <td><a href="/2011-09-27/translate-tornado-template-document.html">翻译处女作欢迎批评指正－tornado的模板系统文档</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2011年8d月23日</td>
+                            <td><a href="/2011-08-23/test.html">A Test Post</a></td>
+                        </tr>
+                    
+                        <tr>
+                            <td class="date">2011年5d月2日</td>
+                            <td><a href="/2011-05-02/tornado-for-django.html">在生产系统使用Tornado WebServer来代替FastCGI加速你的Django应用</a></td>
+                        </tr>
+                    
+                    </table>
+                </div>
+            </div>
+        </div>
+    <script type="text/javascript">
+        hljs.initHighlightingOnLoad();
+    </script>
+    </body> 
+</html>
