@@ -14,71 +14,71 @@ Swift的服务端环境现在而今眼目下的状况是比较局促的, 如果�
 
 ## 开始快乐的coding
 首先建立一个项目
-```
-$~/project_path>swift build --init 
-Creating Package.swift
-Creating .gitignore
-Creating Sources/
-Creating Sources/main.swift
-Creating Tests/
-```
+
+    $~/project_path>swift build --init 
+    Creating Package.swift
+    Creating .gitignore
+    Creating Sources/
+    Creating Sources/main.swift
+    Creating Tests/
+    
 然后加入Swifton的依赖, vim Package.swift, 加入依赖后就是下面这样子:
-```
-dependencies: [
-              .Package(url: "https://github.com/necolt/Swifton.git", versions: Version(0,0,5)..<Version(1,0,0)),
-              .Package(url: "https://github.com/necolt/Curassow.git", versions: Version(0,4,0)..<Version(1,0,0)),
-         ]
-```
+
+    dependencies: [
+                  .Package(url: "https://github.com/necolt/Swifton.git",     versions: Version(0,0,5)..<Version(1,0,0)),
+                  .Package(url: "https://github.com/necolt/Curassow.git", versions: Version(0,4,0)..<Version(1,0,0)),
+             ]
+         
 去中Curassow是一个嵌入式的Http Server, 部署的时候用它来部署, 好处是在生产环境可以直接启动多个进程来提高性能.
 之后用
-```
-$~/project_path>swift build
-```
+
+    $~/project_path>swift build
+
 就开始下载依赖开始编译了. 不过世事无常, 这里编译必定是会出错的. 因为Swift  build在Dev版加入了Test功能, 然后有个bug, 会和很多自带了Test项目的Tests目录冲突, 编译的时候报找不到Tests目录下的资源. 所以这里需要手动删除两个项目下的Tests目录
-```
-$~/project_path>rm -rf ./Packages/PathKit-0.6.1/Tests
-$~/project_path>rm -rf ./Packages/Stencil-0.5.3/Tests
-```
+
+    $~/project_path>rm -rf ./Packages/PathKit-0.6.1/Tests
+    $~/project_path>rm -rf ./Packages/Stencil-0.5.3/Tests
+
 之后再运行编译就会直接通过了.
 当然现在啥也干不了, 只能证明环境通顺了, 下面开始正式coding.
 
 先创建一个Controller.
-```
-$~/project_path>touch ./Sources/HelloController.swift
-```
-写入如下内容:
-```swift
-import Swifton
 
-class HelloController:Controller{
-    override init() {
-        super.init()
-        action("index") {request in
-            return renderJSON(["hello": "world"])
+    $~/project_path>touch ./Sources/HelloController.swift
+
+写入如下内容:
+
+    import Swifton
+
+    class HelloController:Controller{
+        override init() {
+            super.init()
+            action("index") {request in
+                return renderJSON(["hello": "world"])
+            }
         }
     }
-}
-```
+
 然后在main.swift里这么写:
-```swift
-import Swifton
-import Curassow
-let router = Router()
-router.get("/", HelloController()["index"])
-serve { router.respond($0) }
-```
+
+    import Swifton
+    import Curassow
+    let router = Router()
+    router.get("/", HelloController()["index"])
+    serve { router.respond($0) }
+
 然后编译
-```
-$~/project_path>swift build
-Compiling Swift Module 'test00' (2 sources)
-Linking project_name
-```
+
+    $~/project_path>swift build
+    Compiling Swift Module 'test00' (2 sources)
+    Linking project_name
+
 运行:
-```
-$~/project_path>.build/debug/project_name
-[2016-03-18 12:34:23 +0800] [80691] [INFO] Listening at http://0.0.0.0:8000 (80691)
-[2016-03-18 12:34:23 +0800] [80692] [INFO] Booting worker process with pid: 80692
-```
+
+    $~/project_path>.build/debug/project_name
+    [2016-03-18 12:34:23 +0800] [80691] [INFO] Listening at http://0.0.0.0:8000    (80691)
+    [2016-03-18 12:34:23 +0800] [80692] [INFO] Booting worker process with pid: 80692
+
 这个时候在浏览器里打开 http://127.0.0.1:8000 
 
 
@@ -87,9 +87,9 @@ $~/project_path>.build/debug/project_name
 对的, 不看到这里的人是会掉坑里的, 我故意的.
 因为在Kitura的vagrantfile里映射的端口是8090到8090, 所以8000在外边是访问不到的, 有两个方法可以解决, 一个是修改启动的方式, 用参数 --bind 0.0.0.0:8090. 或者直接修改vagrantfile里的端口映射部分, 多加个8000到8000的映射即可
 然后用浏览器打开, 就会出现久违的 
-```
- {"hello": "world"}
-```
+
+    {"hello": "world"}
+
 ##总结一下
 大体上来说用Swift来开发服务端应用应该具备可以玩耍的能力了, 但是用在生产环境下现在还缺乏大量的轮子以及文档和实操经验.
-通过对Swifton的代码研究发现, Swift的表达能力还是很强的, Swifton的代码相当的短小精悍. Curassow也是一个仿Gunicorn的Server, 纯Swift实现, 也非常的值得研究代码, 性能实测由于Mac本地并发数的限制没有探到头, 有空找两台Ubuntu的机器来实测一下.**Curassow**
+通过对Swifton的代码研究发现, Swift的表达能力还是很强的, Swifton的代码相当的短小精悍. Curassow也是一个仿Gunicorn的Server, 纯Swift实现, 也非常的值得研究代码, 性能实测由于Mac本地并发数的限制没有探到头, 有空找两台Ubuntu的机器来实测一下Curassow
