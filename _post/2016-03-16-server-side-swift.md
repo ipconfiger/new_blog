@@ -1,6 +1,6 @@
 --- 
 layout: post
-title: 用swift在开发服务端应用
+title: 用swift开发服务端应用
 ---
 去年Swift开源的时候就打算试试用Swift来开发服务端了, 不过事情太多, 很多轮子也不具备, 大抵上需要自己重写很多东西, 但是人民的力量是强大的, 几个月过去后, 大批的轮子已经在路上了, 由于IBM的金大腿加入, Swift进入后端开发的进度明显的加快了.IBM的云计算服务已经支持Swift作为后端服务的开发语言, 并且推出了Swift的Web框架:[Kitura ](https://github.com/IBM-Swift/Kitura) . 不过经过两天试用后发现此货编译尤其麻烦, release编译至今没有通过过一次, 且debug模式下性能问题也很突出, 遂放弃之, 后来在全球著名的同性交友网站上找到另外一个star超高的框架:[Swifton](https://github.com/necolt/Swifton)
 
