@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>用swift开发服务端应用</title>
+  <meta name="description" content="">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+
+  <body>
+
+    <div class="site-header">
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <i class="fa fa-navicon fa-lg"></i>
+      </a>
+
+      <div class="trigger">
+          <a class="page-link" href="/"> Home</a>
+        
+          
+          <a class="page-link" href="/about.html">关于压力</a>
+          
+        
+      </div>
+    </nav>
+
+
+</div>
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+     <h1 class="post-title">用swift开发服务端应用</h1>
+     <p class="post-meta">Posted on 2016年3月20日</p>
+  </header>
+
+  <article class="post-content">
+    <p>去年Swift开源的时候就打算试试用Swift来开发服务端了, 不过事情太多, 很多轮子也不具备, 大抵上需要自己重写很多东西, 但是人民的力量是强大的, 几个月过去后, 大批的轮子已经在路上了, 由于IBM的金大腿加入, Swift进入后端开发的进度明显的加快了.IBM的云计算服务已经支持Swift作为后端服务的开发语言, 并且推出了Swift的Web框架:<a href="https://github.com/IBM-Swift/Kitura">Kitura </a> . 不过经过两天试用后发现此货编译尤其麻烦, release编译至今没有通过过一次, 且debug模式下性能问题也很突出, 遂放弃之, 后来在全球著名的同性交友网站上找到另外一个star超高的框架:<a href="https://github.com/necolt/Swifton">Swifton</a></p>
+<p>这个框架的名字很有意思</p>
+<p><img alt="" src="http://ww1.sinaimg.cn/large/578b198bgw1f20xcpria0j20zi0l2afy.jpg" />
+由于路由这些都是照搬Rails, 而且又没有ORM, 脚手架命令更是空话, 文档就更是因陋就简了, 所以如果swift比较熟练的话自己RTFC是比较好的选择.</p>
+<h2>环境预备</h2>
+<p>Swift的服务端环境现在而今眼目下的状况是比较局促的, 如果不差钱买个垃圾桶拿去托管, 也ok, 要是自己准备Linux环境的话也就只能Ubuntu了,幸亏这个还是比较主流的,不过好些项目都在Centos上, 😂😂😂😂😂😂
+本地开发环境比较好解决, 多亏了IBM的金大腿, <a href="https://github.com/IBM-Swift/Kitura">Kitura </a>  的Reponsitory里有Docker的脚本和Vagrant的vagrantfile. 由于我在本地开发用的是Vagrant, 所以只需要copy这个file到项目目录下, 然后vagrant up, 经过漫长的等待(大概20分钟), Swift的本地调试环境就搭建好了. </p>
+<h2>开始快乐的coding</h2>
+<p>首先建立一个项目</p>
+<pre><code>$~/project_path&gt;swift build --init 
+Creating Package.swift
+Creating .gitignore
+Creating Sources/
+Creating Sources/main.swift
+Creating Tests/
+</code></pre>
+<p>然后加入Swifton的依赖, vim Package.swift, 加入依赖后就是下面这样子:</p>
+<pre><code>dependencies: [
+              .Package(url: "https://github.com/necolt/Swifton.git",     versions: Version(0,0,5)..&lt;Version(1,0,0)),
+              .Package(url: "https://github.com/necolt/Curassow.git", versions: Version(0,4,0)..&lt;Version(1,0,0)),
+         ]
+</code></pre>
+<p>去中Curassow是一个嵌入式的Http Server, 部署的时候用它来部署, 好处是在生产环境可以直接启动多个进程来提高性能.
+之后用</p>
+<pre><code>$~/project_path&gt;swift build
+</code></pre>
+<p>就开始下载依赖开始编译了. 不过世事无常, 这里编译必定是会出错的. 因为Swift  build在Dev版加入了Test功能, 然后有个bug, 会和很多自带了Test项目的Tests目录冲突, 编译的时候报找不到Tests目录下的资源. 所以这里需要手动删除两个项目下的Tests目录</p>
+<pre><code>$~/project_path&gt;rm -rf ./Packages/PathKit-0.6.1/Tests
+$~/project_path&gt;rm -rf ./Packages/Stencil-0.5.3/Tests
+</code></pre>
+<p>之后再运行编译就会直接通过了.
+当然现在啥也干不了, 只能证明环境通顺了, 下面开始正式coding.</p>
+<p>先创建一个Controller.</p>
+<pre><code>$~/project_path&gt;touch ./Sources/HelloController.swift
+</code></pre>
+<p>写入如下内容:</p>
+<pre><code>import Swifton
+
+class HelloController:Controller{
+    override init() {
+        super.init()
+        action("index") {request in
+            return renderJSON(["hello": "world"])
+        }
+    }
+}
+</code></pre>
+<p>然后在main.swift里这么写:</p>
+<pre><code>import Swifton
+import Curassow
+let router = Router()
+router.get("/", HelloController()["index"])
+serve { router.respond($0) }
+</code></pre>
+<p>然后编译</p>
+<pre><code>$~/project_path&gt;swift build
+Compiling Swift Module 'test00' (2 sources)
+Linking project_name
+</code></pre>
+<p>运行:</p>
+<pre><code>$~/project_path&gt;.build/debug/project_name
+[2016-03-18 12:34:23 +0800] [80691] [INFO] Listening at http://0.0.0.0:8000    (80691)
+[2016-03-18 12:34:23 +0800] [80692] [INFO] Booting worker process with pid: 80692
+</code></pre>
+<p>这个时候在浏览器里打开 http://127.0.0.1:8000 </p>
+<p>打不开</p>
+<p>对的, 不看到这里的人是会掉坑里的, 我故意的.
+因为在Kitura的vagrantfile里映射的端口是8090到8090, 所以8000在外边是访问不到的, 有两个方法可以解决, 一个是修改启动的方式, 用参数 --bind 0.0.0.0:8090. 或者直接修改vagrantfile里的端口映射部分, 多加个8000到8000的映射即可
+然后用浏览器打开, 就会出现久违的 </p>
+<pre><code>{"hello": "world"}
+</code></pre>
+<h2>总结一下</h2>
+<p>大体上来说用Swift来开发服务端应用应该具备可以玩耍的能力了, 但是用在生产环境下现在还缺乏大量的轮子以及文档和实操经验.
+通过对Swifton的代码研究发现, Swift的表达能力还是很强的, Swifton的代码相当的短小精悍. Curassow也是一个仿Gunicorn的Server, 纯Swift实现, 也非常的值得研究代码, 性能实测由于Mac本地并发数的限制没有探到头, 有空找两台Ubuntu的机器来实测一下Curassow</p>
+  </article>
+
+  <div align="center">
+  	<a href="#">
+  	<i class="fa fa-arrow-circle-up fa-2x"></i>
+  	</a>
+  </div>
+  
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'ipconfiger'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+</div>
+      </div>
+    </div>
+
+    <div class="footer" align="center">
+
+  Copyright &copy; <a href=http://diezcami.github.io target="_blank">Camille Diez</a> 2015<BR />
+  Powered by <a href=http://jekyllrb.com target="_blank">Jekyll</a>
+
+</div>
+
+  </body>
+</html>

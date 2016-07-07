@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>为什么GPS记录的数据不准确</title>
+  <meta name="description" content="">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+
+  <body>
+
+    <div class="site-header">
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <i class="fa fa-navicon fa-lg"></i>
+      </a>
+
+      <div class="trigger">
+          <a class="page-link" href="/"> Home</a>
+        
+          
+          <a class="page-link" href="/about.html">关于压力</a>
+          
+        
+      </div>
+    </nav>
+
+
+</div>
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+     <h1 class="post-title">为什么GPS记录的数据不准确</h1>
+     <p class="post-meta">Posted on 2015年5月14日</p>
+  </header>
+
+  <article class="post-content">
+    <p>现在张朝阳和冯唐都跑步了，紧跟着跑步的App也热起来了。好了，我们买了跑鞋，下载了App开始跑起来，我们觉得，</p>
+<h3>跑完后记录的数据应该是这样子的：</h3>
+<p><img alt="image" src="http://ww1.sinaimg.cn/large/578b198bgw1es3m51r59vj207s0dtq3y.jpg" /></p>
+<h3>但是现实情况确是这样子的：</h3>
+<p><img alt="image" src="http://ww1.sinaimg.cn/large/578b198bgw1es3m605z4zj207s0dt0ty.jpg" /></p>
+<p>明明都是在同一条路径上绕圈，为什么GPS会这样子扭来扭去的呢。</p>
+<p>要弄明白其中的原因，我们要从GPS的原理说起。</p>
+<p>大体上来说，GPS定位的原理可以用下面的图片来说明：</p>
+<p><img alt="image" src="http://ww1.sinaimg.cn/large/578b198bgw1es3m70hzk6j207s05g3yr.jpg" /></p>
+<p>具体的原理可以参见：<a href="http://www.cnblogs.com/magicboy110/archive/2010/12/09/1901669.html">传送门</a> 上图也来自这篇Blog。</p>
+<p>简单来说就是，手机接收到4颗卫星的位置信息和时间戳（代表了你的位置到卫星位置的距离），然后根据三点定位的原理，blablabla掐指一算，就知道你的位置（经纬度和海拔）了。</p>
+<h3>那么GPS为什么会不准呢？</h3>
+<p>结合上面的原理，我们可以知道，GPS是通过获知和4颗能收到信号的卫星之间的距离来计算位置的，那么如果电磁波在理想的真空中传播，这当然是很精确的。但是地球太危险了，有很多情况可能会影响到这四个距离参数。</p>
+<p>比如：</p>
+<h4>1.地球电离层波动</h4>
+<p>地球的电离层会反射、折射电磁波，然后电离层又不是一个厚度和形状恒定的一个壳体，所以当地球气候抽风的时候，我们收到的卫星广播的信号就不是直接过来的，从而接收到的距离就会有偏差，这样计算出来的位置就会偏离我们实际所在的位置。</p>
+<h4>2.高层建筑遮挡、反射信号</h4>
+<p>这个情况的原理如下图：</p>
+<p><img alt="image" src="http://ww3.sinaimg.cn/large/578b198bgw1es3m81ahghj207s06v3yl.jpg" /></p>
+<p>如图可知，右边的高楼挡住了卫星的信号，而左边的高楼将信号折射了，所以你得到的卫星的距离就远了那么一点点，所以呢，你计算出来的位置就不在你实际的位置上了，而是在左边的高楼的左边去了。</p>
+<p>在城市里边，这是最常见的GPS漂移的原因，所以建议大家如果用GPS记录跑步的话，还是去空旷开阔的地方会比较准。</p>
+<h4>3.累计误差造成里程变大，速度变快</h4>
+<p>形象的来说可以用下图来表示：</p>
+<p><img alt="image" src="http://ww4.sinaimg.cn/large/578b198bgw1es3m9clyiuj207s05c74g.jpg" /></p>
+<h3>那么问题来了，怎么样才可以让GPS记录更加的准确呢？</h3>
+<h2>请听下回分解</h2>
+  </article>
+
+  <div align="center">
+  	<a href="#">
+  	<i class="fa fa-arrow-circle-up fa-2x"></i>
+  	</a>
+  </div>
+  
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'ipconfiger'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+</div>
+      </div>
+    </div>
+
+    <div class="footer" align="center">
+
+  Copyright &copy; <a href=http://diezcami.github.io target="_blank">Camille Diez</a> 2015<BR />
+  Powered by <a href=http://jekyllrb.com target="_blank">Jekyll</a>
+
+</div>
+
+  </body>
+</html>

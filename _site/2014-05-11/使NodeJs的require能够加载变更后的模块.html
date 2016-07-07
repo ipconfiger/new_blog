@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>使NodeJs的require能够加载变更后的模块</title>
+  <meta name="description" content="">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+
+  <body>
+
+    <div class="site-header">
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <i class="fa fa-navicon fa-lg"></i>
+      </a>
+
+      <div class="trigger">
+          <a class="page-link" href="/"> Home</a>
+        
+          
+          <a class="page-link" href="/about.html">关于压力</a>
+          
+        
+      </div>
+    </nav>
+
+
+</div>
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+     <h1 class="post-title">使NodeJs的require能够加载变更后的模块</h1>
+     <p class="post-meta">Posted on 2014年6月25日</p>
+  </header>
+
+  <article class="post-content">
+    <p>起因是这样子的，我打算做个工具，需要能够动态加载外部的模块，由于是跑起来需要比较长时间运行，所以需要能监测文件变更，一旦模块文件改动了就自动重新加载，网上流传的绝大部分心法都是监测文件变动后就重启一遍了事，这类天魔解体似的功法过于霸道，写起来麻烦，动辄涉及进程线程什么的大招，简便点的就是借助外物，比如node superviso之类的要全局安装的依赖，对于一个功能代码一百来行的小工具来说太过于霸道了，所以细查了node的文档后找到了一个比较简单的方法。</p>
+<p>require模块有一个cache属性，动态加载的瓶颈就在这里，监测文件变更很easy，但是重复执行require模块得到的只能是第一次加载的内容，盖因为require模块把加载的外部模块都缓存在了cahce这个属性里。所以我们要作的事情就很简单了，cache是一个对象，我们只需要遍历这个对象的属性然后判断那些属性对应的模块变更过，就删掉这个属性，然后重新用require加载一边就ok了。</p>
+<p>只是个小技巧，不用其他高深的功法，代码在 <a href="https://github.com/ipconfiger/node-mockit" title="node-mockit">传送阵：点击进入</a>
+也就是前两天晚上写的小工具</p>
+  </article>
+
+  <div align="center">
+  	<a href="#">
+  	<i class="fa fa-arrow-circle-up fa-2x"></i>
+  	</a>
+  </div>
+  
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'ipconfiger'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+</div>
+      </div>
+    </div>
+
+    <div class="footer" align="center">
+
+  Copyright &copy; <a href=http://diezcami.github.io target="_blank">Camille Diez</a> 2015<BR />
+  Powered by <a href=http://jekyllrb.com target="_blank">Jekyll</a>
+
+</div>
+
+  </body>
+</html>

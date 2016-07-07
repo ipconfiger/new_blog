@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>用meinheld加速gunicorn与优雅的重启gunicorn的worker</title>
+  <meta name="description" content="">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+
+  <body>
+
+    <div class="site-header">
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <i class="fa fa-navicon fa-lg"></i>
+      </a>
+
+      <div class="trigger">
+          <a class="page-link" href="/"> Home</a>
+        
+          
+          <a class="page-link" href="/about.html">关于压力</a>
+          
+        
+      </div>
+    </nav>
+
+
+</div>
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+     <h1 class="post-title">用meinheld加速gunicorn与优雅的重启gunicorn的worker</h1>
+     <p class="post-meta">Posted on 2013年11月5日</p>
+  </header>
+
+  <article class="post-content">
+    <p>废话不用多说，异步的worker就是快，不要问为什么，gunicorn支持的多种worker，经过测试meinheld超级快，网上扒的测试结果，见图：
+<img alt="image" src="http://www.360ito.com/misc/photo/13.jpg" />
+没时间自己测了，有空的自己测试吧，下面用最简洁的步骤来实现用meinheld加速gunicorn。</p>
+<p>step1:</p>
+<pre><code>#pip install meinheld
+</code></pre>
+<p>step2:
+修改supervisor的配置，添加</p>
+<pre><code>--worker-class="egg:meinheld#gunicorn_worker”
+</code></pre>
+<p>这个参数。</p>
+<p>重启，搞定</p>
+<p>gunicorn还有一个问题是按照官网的文档用supervisor来管理后，一旦重启就会等很长时间来让mastor进程去boot子进程。官网文档还说了可以通过发送sighub给mastor进程可以“优雅”的重启子进程：<a href="http://docs.gunicorn.org/en/latest/signals.html">任意门</a></p>
+<p>所以关键步骤就是发送SIGHUP信号给mastor进程就可以了。</p>
+<pre><code>#!/bin/bash
+if [ x$1 == x ]; then
+   echo 'which app?'
+   exit 1;
+fi
+pid=`ps -ef|grep $1|awk '{ print $3 }'|uniq -c|sort -k1,1nr|head -1|awk '{ print $2 }'`
+rs=`kill -1 -$pid`
+pc=`ps aux|grep $1|wc -l`
+if [ $pc &gt; 1 ]; then
+    echo 'restart done'
+    exit 0;
+else
+    echo 'Error!Not start'
+fi
+</code></pre>
+<p>保存为 restart.sh,chmod +x restart.sh  ,最后如果你的gunicorn是这样启动的：</p>
+<pre><code>/usr/bin/gunicorn -w 8 -b 0.0.0.0:8000 --worker-class=egg:meinheld#gunicorn_worker app:app
+</code></pre>
+<p>就只需要   ./restart.sh app:app  就可以了</p>
+<p>ps bash shell 不识别 -SIGHUP所以会报错 kill -l 找到对应的信号编号，换成 kill -1 就好了</p>
+<p>祝玩得开心</p>
+  </article>
+
+  <div align="center">
+  	<a href="#">
+  	<i class="fa fa-arrow-circle-up fa-2x"></i>
+  	</a>
+  </div>
+  
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'ipconfiger'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+</div>
+      </div>
+    </div>
+
+    <div class="footer" align="center">
+
+  Copyright &copy; <a href=http://diezcami.github.io target="_blank">Camille Diez</a> 2015<BR />
+  Powered by <a href=http://jekyllrb.com target="_blank">Jekyll</a>
+
+</div>
+
+  </body>
+</html>
