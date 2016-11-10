@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>好认好记的验证码</title>
+  <meta name="description" content="">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+
+  <body>
+
+    <div class="site-header">
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <i class="fa fa-navicon fa-lg"></i>
+      </a>
+
+      <div class="trigger">
+          <a class="page-link" href="/"> Home</a>
+        
+          
+          <a class="page-link" href="/about.html">关于压力</a>
+          
+        
+      </div>
+    </nav>
+
+
+</div>
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+     <h1 class="post-title">好认好记的验证码</h1>
+     <p class="post-meta">Posted on 2016年11月10日</p>
+  </header>
+
+  <article class="post-content">
+    <p>其实验证码实现起来多简单的, Python不算上import random的话也就一行就搞定. 一般来说是这样子的:</p>
+<p><code>python
+from random import sample
+"".join(sample('0123456789', 6))</code>  </p>
+<p>但是这样子生成的验证码确并不一定好用, 比如:</p>
+<p><code>python
+from random import sample
+for i in range(10):
+    print "".join(sample('0123456789', 6))</code></p>
+<p>循环10次得到结果如下:</p>
+<p>572041
+278306
+570843
+301895
+157230
+978012
+036485
+872901
+042571
+802743</p>
+<p>这些验证码的问题在于, 每位的数字都不相同, 所以在念出来的时候你需要记住6个数字的组合, 所以比较费脑, 对数字不敏感的同学尤其觉得困难.</p>
+<p>如果将验证码中出现的数字降低到3个, 那么记忆起来的难度就会降低很多了.</p>
+<p>所以我们先选3个数出来, 然后再组合成6位随机数</p>
+<p><code>python
+from random import sample
+"".join(sample(sample('0123456789', 3), 6))</code></p>
+<p>但是这样子写是没法运行的</p>
+<p>```
+In [7]: "".join(sample(sample('0123456789', 3), 6))</p>
+<hr />
+<p>ValueError                                Traceback (most recent call last)
+<ipython-input-7-6f9b3c0172dc> in <module>()
+----&gt; 1 "".join(sample(sample('0123456789', 3), 6))</p>
+<p>/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/random.pyc in sample(self, population, k)
+    321         n = len(population)
+    322         if not 0 &lt;= k &lt;= n:
+--&gt; 323             raise ValueError("sample larger than population")
+    324         random = self.random
+    325         _int = int</p>
+<p>ValueError: sample larger than population
+```</p>
+<p>因为sample的大小要大于生成数列的大小, 所以我们修改一下, 将生成的sample乘以3就行了.</p>
+<p><code>python
+from random import sample
+"".join(sample(sample('0123456789', 3)*3, 6))</code></p>
+<p>这样子我们再生成10组随机数出来:</p>
+<p>699955
+004504
+311553
+449111
+665655
+639396
+711222
+949409
+001210
+151445</p>
+<p>再看看是不是容易记多了? 起码能一次记住不用老看手机了.</p>
+<p>祝玩得开心</p>
+  </article>
+
+  <div align="center">
+  	<a href="#">
+  	<i class="fa fa-arrow-circle-up fa-2x"></i>
+  	</a>
+  </div>
+  
+  <div id="disqus_thread"></div>
+    <script type="text/javascript">
+        /* * * CONFIGURATION VARIABLES: EDIT BEFORE PASTING INTO YOUR WEBPAGE * * */
+        var disqus_shortname = 'ipconfiger'; // required: replace example with your forum shortname
+
+        /* * * DON'T EDIT BELOW THIS LINE * * */
+        (function() {
+            var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+            dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+            (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+        })();
+    </script>
+    <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+    <a href="http://disqus.com" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+
+
+</div>
+      </div>
+    </div>
+
+    <div class="footer" align="center">
+
+  Copyright &copy; <a href=http://diezcami.github.io target="_blank">Camille Diez</a> 2015<BR />
+  Powered by <a href=http://jekyllrb.com target="_blank">Jekyll</a>
+
+</div>
+
+  </body>
+</html>
