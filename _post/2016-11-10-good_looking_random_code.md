@@ -4,18 +4,18 @@ title: 好认好记的验证码
 ---
 其实验证码实现起来多简单的, Python不算上import random的话也就一行就搞定. 一般来说是这样子的:
 
-```python
-from random import sample
-"".join(sample('0123456789', 6))  
-```  
+    ```python
+    from random import sample
+    "".join(sample('0123456789', 6))  
+    ```  
 
 但是这样子生成的验证码确并不一定好用, 比如:
 
-```python
-from random import sample
-for i in range(10):
-    print "".join(sample('0123456789', 6))
-```
+    ```python
+    from random import sample
+    for i in range(10):
+        print "".join(sample('0123456789', 6))
+    ```
 
 循环10次得到结果如下:
 
@@ -36,36 +36,36 @@ for i in range(10):
 
 所以我们先选3个数出来, 然后再组合成6位随机数
 
-```python
-from random import sample
-"".join(sample(sample('0123456789', 3), 6))
-```
+    ```python
+    from random import sample
+    "".join(sample(sample('0123456789', 3), 6))
+    ```
 
 但是这样子写是没法运行的
 
-```
-In [7]: "".join(sample(sample('0123456789', 3), 6))
----------------------------------------------------------------------------
-ValueError                                Traceback (most recent call last)
-<ipython-input-7-6f9b3c0172dc> in <module>()
-----> 1 "".join(sample(sample('0123456789', 3), 6))
-
-/System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/random.pyc in sample(self, population, k)
-    321         n = len(population)
-    322         if not 0 <= k <= n:
---> 323             raise ValueError("sample larger than population")
-    324         random = self.random
-    325         _int = int
-
-ValueError: sample larger than population
-```
+    ```
+    In [7]: "".join(sample(sample('0123456789', 3), 6))
+    ---------------------------------------------------------------------------
+    ValueError                                Traceback (most recent call last)
+    <ipython-input-7-6f9b3c0172dc> in <module>()
+    ----> 1 "".join(sample(sample('0123456789', 3), 6))
+    
+    /System/Library/Frameworks/Python.framework/Versions/2.7/lib/python2.7/random.pyc in sample(self, population, k)
+        321         n = len(population)
+        322         if not 0 <= k <= n:
+    --> 323             raise ValueError("sample larger than population")
+        324         random = self.random
+        325         _int = int
+    
+    ValueError: sample larger than population
+    ```
 
 因为sample的大小要大于生成数列的大小, 所以我们修改一下, 将生成的sample乘以3就行了.
 
-```python
-from random import sample
-"".join(sample(sample('0123456789', 3)*3, 6))
-```
+    ```python
+    from random import sample
+    "".join(sample(sample('0123456789', 3)*3, 6))
+    ```
 
 这样子我们再生成10组随机数出来:
 
